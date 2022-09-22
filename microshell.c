@@ -24,6 +24,7 @@ void	free_args(char **args)
 		free(args[i]);
 		i++;
 	}
+	free(args);
 }
 
 int	ft_strlen(char *str)
@@ -130,8 +131,6 @@ int	main(int argc, char **argv, char **envp) {
 	int		i;
 	int		count;
 	
-	// char *a[] = {"/bin/sleep", "10", NULL};
-	// execve(a[0], a, envp);
 	if (argc < 2)
 		exit(0);
 
@@ -154,7 +153,7 @@ int	main(int argc, char **argv, char **envp) {
 			count++;
 		i++;	
 	}
-	count += 1;
+	count++;
 	cmd = malloc(sizeof(t_cmd) * (count));
 	if (!cmd)
 		return (0);
@@ -162,43 +161,36 @@ int	main(int argc, char **argv, char **envp) {
 	int	k = 0;
 	i = 1;
 	while ( i < argc ) {
-		// printf("%s\n", argv[i]);
 		if (i == 1)
 			cmd[k].sep_type = START;
-
-		if (strcmp(argv[i], "|") == 0) {	
+		if (strcmp(argv[i], "|") == 0) 
 			cmd[++k].sep_type = PIPE;
-
-		}
-		else if (strcmp(argv[i], ";") == 0) {
+		else if (strcmp(argv[i], ";") == 0)
 			cmd[++k].sep_type = SEMICOLON;
-		}
-		else {
+		else
 			cmd[k].args = add_arg(cmd[k].args, argv[i]);
-		}
 		i++;
 	}
-	// loop through the struct and execute
-	int	p = 0;
 	int	temp = 0;
 	int	fd[2];
 	int	pid;
 	int	active_pipe = 0;
-	while (p < count) {
-		if (p + 1 == count || cmd[p + 1].sep_type == SEMICOLON)
+	i = 0;
+	while (i < count) {
+		if (i + 1 == count || cmd[i + 1].sep_type == SEMICOLON)
 			active_pipe = 0;
 		else
 		{
 			active_pipe = 1;
 			pipe(fd);
 		}
-		if (cmd[p].sep_type == SEMICOLON) {
+		if (cmd[i].sep_type == SEMICOLON) {
 			waitpid(pid, NULL, 0);
 		}
 		pid = fork();
 		if (pid < 0)
 		{
-			error_message("fork error");
+			error_msg("error: fatal\n");
 			exit(1);
 		}
 		if (pid == 0) {
@@ -212,8 +204,10 @@ int	main(int argc, char **argv, char **envp) {
 				dup2(fd[1], 1);
 				close(fd[1]);
 			}
-			execve(cmd[p].args[0], cmd[p].args, envp);
-			error_message(NULL);
+			execve(cmd[i].args[0], cmd[i].args, envp);
+			error_msg("error: cannot execute ");
+			error_msg(cmd[i].args[0]);
+			error_msg("\n");
 			exit(1);
 		}
 		if (temp > 2)
@@ -222,14 +216,14 @@ int	main(int argc, char **argv, char **envp) {
 			close(fd[1]);
 			temp = fd[0];
 		}
-		p++;
+		i++;
 	}
 	if (temp > 2)
 		close(temp);
 	while(wait(NULL) > 0);
-
 	free_everything(cmd, count);
 
+	// system("leaks a.out");
 	// check_fd_leaks();
 	return (0);
 }
