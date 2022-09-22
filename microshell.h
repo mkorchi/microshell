@@ -6,7 +6,7 @@
 /*   By: mkorchi <mkorchi@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/09/15 11:38:28 by mkorchi           #+#    #+#             */
-/*   Updated: 2022/09/17 18:06:46 by mkorchi          ###   ########.fr       */
+/*   Updated: 2022/09/21 12:54:17 by mkorchi          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,7 +26,6 @@
 
 typedef struct s_cmd {
 	char	**args;
-	// int		pid;
 	int		sep_type;
 }	t_cmd;
 
@@ -50,10 +49,6 @@ number of array is number of seperators + 1
 							* pipe => we gonna read from fd[0], the wait is not needed
 								-> close fd[0] when done
 							* semicolon => we gonna read from 0 and we shall wait for the previous command
-
-
-
-
 
 */
 
