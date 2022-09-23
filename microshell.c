@@ -135,12 +135,12 @@ int	main(int argc, char **argv, char **envp) {
 		exit(0);
 
 	count = 0;
-	if ( strcmp(argv[0], "cd") == 0 ) {
+	if ( strcmp(argv[1], "cd") == 0 ) {
 		if ( argc != 3 ) {
 			error_message("error: cd: bad arguments\n");
 			exit(1);
 		}
-		if ( chdir(argv[1]) == -1) {
+		if ( chdir(argv[2]) == -1) {
 			error_message("error: cd: cannot change directory to path_to_change\n");
 			exit(1);
 		}
@@ -195,14 +195,14 @@ int	main(int argc, char **argv, char **envp) {
 		}
 		if (pid == 0) {
 			if (active_pipe)
+			{
 				close(fd[0]);
+				dup2(fd[1], 1);
+				close(fd[1]);
+			}
 			if (temp > 2) {
 				dup2(temp, 0);
 				close(temp);
-			}
-			if (active_pipe) {
-				dup2(fd[1], 1);
-				close(fd[1]);
 			}
 			execve(cmd[i].args[0], cmd[i].args, envp);
 			error_msg("error: cannot execute ");
@@ -215,12 +215,13 @@ int	main(int argc, char **argv, char **envp) {
 		if (active_pipe) {
 			close(fd[1]);
 			temp = fd[0];
-		}
+		} else
+			temp = 0;
 		i++;
 	}
 	if (temp > 2)
 		close(temp);
-	while(wait(NULL) > 0);
+	while(waitpid(-1, NULL, 0) > 0);
 	free_everything(cmd, count);
 
 	// system("leaks a.out");
