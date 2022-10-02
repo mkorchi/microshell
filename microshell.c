@@ -10,7 +10,20 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "microshell.h"
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+# define PIPE 4
+# define SEMICOLON 5
+# define START 0
+
+typedef struct s_cmd {
+	char	**args;
+	int		sep_type;
+}	t_cmd;
+
 
 void	free_args(char **args)
 {
@@ -62,7 +75,6 @@ void	error_message(char *msg)
 void	free_everything(t_cmd *cmd, int length)
 {
 	int	i;
-	int	j;
 
 	i = 0;
 	while ( i < length )
@@ -116,14 +128,22 @@ char	**add_arg(char **args, char *arg)
 	return (new_args);
 }
 
-void	check_fd_leaks()
-{
-	int t = dup(1);
-	if (t == 3)
-		printf("no file descriptor leak\n");
-	else
-		printf("file descriptor leak\n");
-	close(t);
+void	ft_cd(t_cmd cmd) {
+	int i = 0;
+	while (cmd.args[i])
+		i++;
+	if ( strcmp(cmd.args[0], "cd") == 0 ) {
+		if ( i != 3 ) {
+			error_message("error: cd: bad arguments\n");
+			exit(1);
+		}
+		if ( chdir(cmd.args[1]) == -1) {
+			error_message("error: cd: cannot change directory to\n");
+			error_message(cmd.args[1]);
+			exit(1);
+		}
+		exit(0);
+	}
 }
 
 int	main(int argc, char **argv, char **envp) {
@@ -135,17 +155,7 @@ int	main(int argc, char **argv, char **envp) {
 		exit(0);
 
 	count = 0;
-	if ( strcmp(argv[1], "cd") == 0 ) {
-		if ( argc != 3 ) {
-			error_message("error: cd: bad arguments\n");
-			exit(1);
-		}
-		if ( chdir(argv[2]) == -1) {
-			error_message("error: cd: cannot change directory to path_to_change\n");
-			exit(1);
-		}
-		exit(0);
-	}
+	
 	i = 1;
 	while ( i < argc )
 	{
@@ -190,7 +200,7 @@ int	main(int argc, char **argv, char **envp) {
 		pid = fork();
 		if (pid < 0)
 		{
-			error_msg("error: fatal\n");
+			error_message("error: fatal\n");
 			exit(1);
 		}
 		if (pid == 0) {
@@ -204,10 +214,12 @@ int	main(int argc, char **argv, char **envp) {
 				dup2(temp, 0);
 				close(temp);
 			}
+			if (strcmp(cmd[i].args[0], "cd") == 0)
+				ft_cd(cmd[i]);
 			execve(cmd[i].args[0], cmd[i].args, envp);
-			error_msg("error: cannot execute ");
-			error_msg(cmd[i].args[0]);
-			error_msg("\n");
+			error_message("error: cannot execute ");
+			error_message(cmd[i].args[0]);
+			error_message("\n");
 			exit(1);
 		}
 		if (temp > 2)
@@ -223,8 +235,5 @@ int	main(int argc, char **argv, char **envp) {
 		close(temp);
 	while(waitpid(-1, NULL, 0) > 0);
 	free_everything(cmd, count);
-
-	// system("leaks a.out");
-	// check_fd_leaks();
 	return (0);
 }
